@@ -138,4 +138,30 @@ src/
   proxy.ts          Refresco de sesión y redirecciones optimistas
 ```
 
-> Las secciones de base de datos, migraciones, correo, administrador inicial y despliegue en Vercel se documentarán en las fases correspondientes.
+## Pruebas
+
+| Comando | Qué verifica |
+| --- | --- |
+| `npm test` | Fechas en America/Bogota, citas afectadas por cambios de horario, validación de inventario |
+| `npm run db:check` | 24 comprobaciones en la base vinculada: RLS y privacidad, roles, reservas fuera de horario, descansos y bloqueos, solapamientos, límites, cancelaciones, estados e inventario (no deja datos) |
+| `npm run lint` / `npm run typecheck` / `npm run build` | Calidad de código, tipos y build de producción |
+
+La concurrencia se verificó contra Supabase con peticiones simultáneas reales: dos clientes reservando el mismo horario (solo una reserva se guarda) y cinco salidas de inventario simultáneas (la existencia nunca queda negativa).
+
+## GitHub
+
+Repositorio: `GitRodas/barberShop` (rama `main`). `.env.local` y `supabase/.temp` están excluidos por `.gitignore`; solo se versiona `.env.example` con valores de ejemplo.
+
+## Despliegue en Vercel (plan Hobby, gratuito)
+
+1. En [vercel.com](https://vercel.com) → **Add New… → Project** → importa `GitRodas/barberShop`.
+2. **Project Name**: `barbershop` (Vercel solo admite minúsculas; el nombre visible de la app sigue siendo BarberShop). Si `barbershop.vercel.app` está ocupado, Vercel asigna otra URL: úsala en los pasos siguientes.
+3. **Environment Variables** (Production y Preview):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `NEXT_PUBLIC_SITE_URL` = la URL de producción (p. ej. `https://barbershop-xxxx.vercel.app`).
+4. **Deploy**. `vercel.json` ejecuta las funciones en `cle1` (Cleveland), cerca de la base de datos de Supabase (`us-east-2`).
+5. En Supabase → **Authentication → URL Configuration**: cambia *Site URL* a la URL de producción y agrega `https://<tu-url>/**` en *Redirect URLs* (conserva `http://localhost:3000/**` para desarrollo).
+6. Cada `git push` a `main` despliega automáticamente; las ramas generan previsualizaciones.
+
+Las migraciones no se aplican en el despliegue: se aplican con `npx supabase db push` antes de publicar código que las necesite.
