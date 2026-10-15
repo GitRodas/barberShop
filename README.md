@@ -38,6 +38,21 @@ npx supabase link --project-ref <ref>    # ref: Project Settings → General
 
 `supabase/config.toml` solo afecta al entorno local; la configuración de Auth del proyecto remoto se ajusta en el panel de Supabase.
 
+## Autenticación (Supabase Auth)
+
+Configura en el panel de Supabase:
+
+1. **Authentication → URL Configuration**
+   - *Site URL*: `http://localhost:3000` (en producción, la URL de Vercel).
+   - *Redirect URLs*: `http://localhost:3000/**` y la URL de producción con `/**`.
+2. **Authentication → Sign In / Providers → Email**: confirmación de correo activada y longitud mínima de contraseña 8.
+3. **Authentication → Email Templates** (opcional). Con las plantillas por defecto, `/auth/confirm` recibe un `code` y el enlace debe abrirse en el mismo navegador donde se hizo el registro o la solicitud. Para que funcione desde cualquier dispositivo, cambia el enlace de las plantillas por:
+   - *Confirm signup*: `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/reservar`
+   - *Reset password*: `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/restablecer-password`
+4. **SMTP propio (recomendado en producción)**: el correo integrado de Supabase tiene un límite de envío muy bajo. Configura un proveedor (p. ej. Resend o Brevo) en *Authentication → Emails → SMTP Settings*.
+
+Flujo: el registro guarda nombre y teléfono en los metadatos y un trigger crea el perfil con rol `client`. `/auth/confirm` valida el enlace del correo (`token_hash` o `code`) y redirige solo a rutas internas. El proxy refresca la sesión y redirige de forma optimista; cada página protegida vuelve a verificar la sesión en el servidor y RLS protege los datos.
+
 ## Base de datos
 
 Migraciones versionadas en `supabase/migrations/`:
@@ -96,7 +111,9 @@ src/
   components/       Componentes de UI y layout
   config/           Configuración del sitio (nombre, zona horaria)
   lib/supabase/     Clientes de Supabase (navegador, servidor, proxy)
-  proxy.ts          Refresco de sesión de Supabase en cada petición
+  lib/auth/         Sesión, acciones de servidor y redirecciones seguras
+  lib/validation/   Esquemas Zod
+  proxy.ts          Refresco de sesión y redirecciones optimistas
 ```
 
 > Las secciones de base de datos, migraciones, correo, administrador inicial y despliegue en Vercel se documentarán en las fases correspondientes.

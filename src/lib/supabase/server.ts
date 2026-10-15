@@ -1,11 +1,14 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getPublicEnv } from "@/lib/env";
 import type { Database } from "@/lib/supabase/database.types";
 
 export async function createClient() {
   const env = getPublicEnv();
+  // La sesión depende de la petición y de la hora actual: nunca se prerenderiza.
+  await connection();
   const cookieStore = await cookies();
 
   return createServerClient<Database>(

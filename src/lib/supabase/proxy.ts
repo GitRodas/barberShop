@@ -1,14 +1,21 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { hasPublicEnv } from "@/lib/env";
+import {
+  guestOnlyPaths,
+  matchesPrefix,
+  protectedPrefixes,
+} from "@/lib/auth/redirect";
+import type { Database } from "@/lib/supabase/database.types";
 
-// Refresca la sesión de Supabase en cada petición. No sustituye la autorización en servidor ni RLS.
+// Refresca la sesión y hace redirecciones optimistas.
+// No sustituye la autorización en servidor ni las políticas RLS.
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   if (!hasPublicEnv()) return response;
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
@@ -32,8 +39,30 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Valida el JWT contra las claves del proyecto; no ejecutar código entre la creación del cliente y esta llamada.
-  await supabase.auth.getClaims();
+  // No ejecutar código entre la creación del cliente y esta llamada.
+  const { data } = await supabase.auth.getClaims();
+  const isAuthenticated = Boolean(data?.claims?.sub);
+  const { pathname, search } = request.nextUrl;
+
+  if (!isAuthenticated && matchesPrefix(pathname, protectedPrefixes)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = `?next=${encodeURIComponent(pathname + search)}`;
+    return redirectWithCookies(url, response);
+  }
+
+  if (isAuthenticated && matchesPrefix(pathname, guestOnlyPaths)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return redirectWithCookies(url, response);
+  }
 
   return response;
+}
+
+function redirectWithCookies(url: URL, from: NextResponse) {
+  const redirect = NextResponse.redirect(url);
+  from.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+  return redirect;
 }

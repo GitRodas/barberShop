@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Scissors } from "lucide-react";
 import { siteConfig } from "@/config/site";
-import { ButtonLink } from "@/components/ui/button-link";
+import { UserNav, UserNavFallback } from "@/components/layout/user-nav";
 
 export function SiteHeader() {
   return (
@@ -14,16 +15,10 @@ export function SiteHeader() {
           <Scissors className="size-5 text-accent" aria-hidden />
           {siteConfig.name}
         </Link>
-        <nav aria-label="Principal" className="flex items-center gap-2">
-          <Link
-            href="/login"
-            className="rounded-full px-3 py-2 text-sm text-muted hover:text-foreground"
-          >
-            Ingresar
-          </Link>
-          <ButtonLink href="/reservar" className="hidden sm:inline-flex">
-            Reservar
-          </ButtonLink>
+        <nav aria-label="Principal" className="flex items-center gap-1 sm:gap-2">
+          <Suspense fallback={<UserNavFallback />}>
+            <UserNav />
+          </Suspense>
         </nav>
       </div>
     </header>
