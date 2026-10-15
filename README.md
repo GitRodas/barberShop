@@ -53,6 +53,11 @@ Configura en el panel de Supabase:
 
 Flujo: el registro guarda nombre y teléfono en los metadatos y un trigger crea el perfil con rol `client`. `/auth/confirm` valida el enlace del correo (`token_hash` o `code`) y redirige solo a rutas internas. El proxy refresca la sesión y redirige de forma optimista; cada página protegida vuelve a verificar la sesión en el servidor y RLS protege los datos.
 
+## Reservas de clientes
+
+- **`/reservar`**: el cliente elige un día (solo se habilitan los días con horario) y uno de los horarios libres que calcula la base de datos (`get_available_slots`). Al guardar, `book_appointment` vuelve a validar horario, descansos, bloqueos, solapamientos, antelación y límite de citas activas; la cita queda **pendiente** hasta que el barbero la confirme.
+- **`/mis-citas`**: próximas citas e historial. El cliente puede cancelar solo con la antelación configurada; después debe contactar al barbero.
+
 ## Panel del barbero (`/admin`)
 
 - **Resumen**: agenda del día, pendientes por confirmar, existencias bajas y avisos de citas afectadas.
