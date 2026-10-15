@@ -65,6 +65,13 @@ Flujo: el registro guarda nombre y teléfono en los metadatos y un trigger crea 
 - **Horarios**: varios intervalos por día (los huecos son descansos) y bloqueos. Antes de quitar un intervalo o crear un bloqueo se listan las citas activas afectadas y se pide confirmación; las citas no se cancelan solas.
 - **Configuración**: duración del corte (1 hora por defecto), antelación mínima para reservar y cancelar, días visibles y citas activas por cliente.
 
+## Inventario (`/admin/inventario`)
+
+- Alta de productos con unidad, existencia inicial y mínimo para la alerta; edición y desactivación (el historial se conserva).
+- **Entradas** suman, **salidas** restan y **ajustes** fijan la existencia real contada (requieren motivo).
+- `register_inventory_movement` bloquea la fila del producto, actualiza la existencia y crea el movimiento en la misma transacción: no hay cantidades negativas aunque haya operaciones simultáneas.
+- `/admin/inventario/movimientos`: historial inmutable con filtros por producto y tipo. Los cortes no descuentan insumos automáticamente.
+
 ## Base de datos
 
 Migraciones versionadas en `supabase/migrations/`:
@@ -74,6 +81,7 @@ Migraciones versionadas en `supabase/migrations/`:
 | `…01_schema.sql` | Tablas, tipos, restricciones (sin solapamientos de citas ni de horarios), índices y vista de existencias bajas |
 | `…02_security.sql` | Privilegios mínimos, RLS en todas las tablas y funciones de negocio |
 | `…03_slot_60_minutes.sql` | Duración de cada corte: 1 hora |
+| `…04_create_inventory_item.sql` | Alta de producto con existencia inicial en una sola transacción |
 
 ```bash
 npx supabase db push --dry-run   # revisar qué se aplicará
@@ -93,7 +101,7 @@ npm run db:check                 # comprobaciones de seguridad (ver abajo)
 
 ### Comprobaciones
 
-`supabase/checks/security_checks.sql` crea usuarios y datos de prueba, verifica RLS, reservas (fuera de horario, descansos, bloqueos, solapamientos, límite por cliente), cancelaciones, estados e inventario, y **termina siempre con una excepción** para que no persista nada. Resultado esperado: `CHECKS_PASSED: 23`.
+`supabase/checks/security_checks.sql` crea usuarios y datos de prueba, verifica RLS, reservas (fuera de horario, descansos, bloqueos, solapamientos, límite por cliente), cancelaciones, estados e inventario, y **termina siempre con una excepción** para que no persista nada. Resultado esperado: `CHECKS_PASSED: 24`.
 
 ### Administrador inicial
 

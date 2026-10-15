@@ -1,6 +1,6 @@
 -- Comprobaciones de seguridad y reglas de negocio.
 -- Se ejecuta en un único bloque que SIEMPRE termina con una excepción, por lo que
--- ningún dato de prueba persiste. Resultado esperado: "CHECKS_PASSED: <n>".
+-- ningún dato de prueba persiste. Resultado esperado: "CHECKS_PASSED: 24".
 --
 --   npx supabase db query --linked -f supabase/checks/security_checks.sql
 
@@ -349,6 +349,24 @@ begin
   end;
   v_passed := v_passed + 1;
 
+  -- Alta de producto con existencia inicial (atómica) ------------------------------
+  perform set_config('request.jwt.claims', json_build_object('sub', u_admin, 'role', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+  select id, quantity into v_item, v_qty from public.create_inventory_item('Shampoo QA', 'botella', 2, 5);
+  select count(*) into v_count from public.inventory_movements where item_id = v_item and reason = 'Existencia inicial';
+  if v_qty <> 5 or v_count <> 1 then raise exception 'FALLO alta con existencia inicial'; end if;
+  begin
+    perform public.create_inventory_item('shampoo qa', 'u', 0, 0);
+    raise exception 'FALLO producto duplicado' using errcode = 'T0001';
+  exception when sqlstate 'T0001' then raise; when others then null;
+  end;
+  begin
+    perform public.create_inventory_item('Otro QA', 'u', 0, -1);
+    raise exception 'FALLO existencia inicial negativa' using errcode = 'T0001';
+  exception when sqlstate 'T0001' then raise; when others then null;
+  end;
+  v_passed := v_passed + 1;
+
   -- Cliente sin acceso a inventario ni a funciones de admin ---------------------
   perform set_config('request.jwt.claims', json_build_object('sub', u_a, 'role', 'authenticated')::text, true);
   perform set_config('role', 'authenticated', true);
@@ -357,6 +375,11 @@ begin
   begin
     perform public.register_inventory_movement(v_item, 'entry', 1);
     raise exception 'FALLO cliente registró movimiento' using errcode = 'T0001';
+  exception when sqlstate 'T0001' then raise; when others then null;
+  end;
+  begin
+    perform public.create_inventory_item('Cliente QA', 'u', 0, 0);
+    raise exception 'FALLO cliente creó producto por función' using errcode = 'T0001';
   exception when sqlstate 'T0001' then raise; when others then null;
   end;
   v_passed := v_passed + 1;

@@ -362,6 +362,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_inventory_item: {
+        Args: {
+          p_initial_quantity?: number
+          p_min_quantity?: number
+          p_name: string
+          p_unit: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          is_active: boolean
+          min_quantity: number
+          name: string
+          quantity: number
+          unit: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "inventory_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_available_slots: {
         Args: { p_date: string }
         Returns: {
