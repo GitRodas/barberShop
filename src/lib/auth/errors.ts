@@ -21,6 +21,6 @@ export function authErrorMessage(error: AuthError): string {
   const message = error.code ? messages[error.code] : undefined;
   if (message) return message;
   // Se registra en los logs del servidor (Vercel) para poder diagnosticar; nunca datos del usuario.
-  console.error("[auth] error no controlado", { code: error.code, status: error.status });
+  console.error("[auth] error no controlado", { name: error.name, code: error.code, status: error.status });
   return "No pudimos completar la operación. Inténtalo de nuevo.";
 }
