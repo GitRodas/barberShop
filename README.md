@@ -53,6 +53,13 @@ Configura en el panel de Supabase:
 
 Flujo: el registro guarda nombre y teléfono en los metadatos y un trigger crea el perfil con rol `client`. `/auth/confirm` valida el enlace del correo (`token_hash` o `code`) y redirige solo a rutas internas. El proxy refresca la sesión y redirige de forma optimista; cada página protegida vuelve a verificar la sesión en el servidor y RLS protege los datos.
 
+## Panel del barbero (`/admin`)
+
+- **Resumen**: agenda del día, pendientes por confirmar, existencias bajas y avisos de citas afectadas.
+- **Citas**: vistas de día, semana y mes; confirmar, completar (cuando la cita ya empezó) y cancelar.
+- **Horarios**: varios intervalos por día (los huecos son descansos) y bloqueos. Antes de quitar un intervalo o crear un bloqueo se listan las citas activas afectadas y se pide confirmación; las citas no se cancelan solas.
+- **Configuración**: duración del corte (1 hora por defecto), antelación mínima para reservar y cancelar, días visibles y citas activas por cliente.
+
 ## Base de datos
 
 Migraciones versionadas en `supabase/migrations/`:
@@ -61,6 +68,7 @@ Migraciones versionadas en `supabase/migrations/`:
 | --- | --- |
 | `…01_schema.sql` | Tablas, tipos, restricciones (sin solapamientos de citas ni de horarios), índices y vista de existencias bajas |
 | `…02_security.sql` | Privilegios mínimos, RLS en todas las tablas y funciones de negocio |
+| `…03_slot_60_minutes.sql` | Duración de cada corte: 1 hora |
 
 ```bash
 npx supabase db push --dry-run   # revisar qué se aplicará
@@ -102,6 +110,7 @@ Solo puede existir un administrador; para cambiarlo, primero devuelve el anterio
 | `npm run build` | Build de producción |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | Comprobación de TypeScript |
+| `npm test` | Pruebas unitarias (Vitest) |
 
 ## Estructura
 

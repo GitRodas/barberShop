@@ -5,8 +5,8 @@ import { ButtonLink } from "@/components/ui/button-link";
 const features = [
   {
     icon: Clock,
-    title: `${siteConfig.defaultSlotMinutes} minutos`,
-    text: "Cada corte tiene su espacio reservado, sin esperas.",
+    title: "Una hora por corte",
+    text: "Tu turno es solo tuyo: sin esperas ni prisas.",
   },
   {
     icon: CalendarCheck,
