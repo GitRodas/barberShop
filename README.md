@@ -38,6 +38,47 @@ npx supabase link --project-ref <ref>    # ref: Project Settings → General
 
 `supabase/config.toml` solo afecta al entorno local; la configuración de Auth del proyecto remoto se ajusta en el panel de Supabase.
 
+## Base de datos
+
+Migraciones versionadas en `supabase/migrations/`:
+
+| Archivo | Contenido |
+| --- | --- |
+| `…01_schema.sql` | Tablas, tipos, restricciones (sin solapamientos de citas ni de horarios), índices y vista de existencias bajas |
+| `…02_security.sql` | Privilegios mínimos, RLS en todas las tablas y funciones de negocio |
+
+```bash
+npx supabase db push --dry-run   # revisar qué se aplicará
+npx supabase db push             # aplicar al proyecto vinculado
+npm run db:types                 # regenerar src/lib/supabase/database.types.ts
+npm run db:check                 # comprobaciones de seguridad (ver abajo)
+```
+
+### Modelo de seguridad
+
+- RLS activo en todas las tablas. Los clientes solo leen su perfil y sus citas; el administrador lo ve todo.
+- Las citas y las existencias **no** se escriben directamente: se usan funciones (`book_appointment`, `cancel_appointment`, `set_appointment_status`, `register_inventory_movement`) que validan identidad, permisos y datos dentro de una transacción.
+- `appointments_no_overlap` (restricción de exclusión) impide solapamientos aunque haya reservas concurrentes.
+- El rol no se puede cambiar desde la API (sin permiso de columna y con un trigger de protección). Solo puede existir un administrador.
+- El historial de inventario es inmutable y las cantidades nunca pueden ser negativas.
+- Las funciones privilegiadas usan `security definer` con `search_path` vacío y `execute` solo para `authenticated`.
+
+### Comprobaciones
+
+`supabase/checks/security_checks.sql` crea usuarios y datos de prueba, verifica RLS, reservas (fuera de horario, descansos, bloqueos, solapamientos, límite por cliente), cancelaciones, estados e inventario, y **termina siempre con una excepción** para que no persista nada. Resultado esperado: `CHECKS_PASSED: 23`.
+
+### Administrador inicial
+
+Nunca se asigna desde el registro público. Tras registrarte y confirmar el correo con la cuenta del barbero, ejecuta en **Supabase → SQL Editor**:
+
+```sql
+update public.profiles
+set role = 'admin'
+where id = (select id from auth.users where email = 'correo-del-barbero@ejemplo.com');
+```
+
+Solo puede existir un administrador; para cambiarlo, primero devuelve el anterior a `client`.
+
 ## Scripts
 
 | Comando | Acción |

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "db:types": "supabase gen types typescript --linked --schema public > src/lib/supabase/database.types.ts",
+    "db:check": "supabase db query --linked -f supabase/checks/security_checks.sql"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
